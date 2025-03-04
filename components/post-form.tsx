@@ -26,9 +26,6 @@ interface PostFormData {
   scheduledDate: string;
 }
 
-// カスタムイベントを定義（ScheduledPostsコンポーネントと同じ名前を使用）
-const STORAGE_UPDATE_EVENT = "scheduledPostsUpdate";
-
 export function PostForm() {
   const [formData, setFormData] = useState<PostFormData>({
     image: "",
