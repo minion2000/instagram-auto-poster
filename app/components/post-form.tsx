@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { ja } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
@@ -121,9 +121,11 @@ export function PostForm() {
               />
               {imagePreview ? (
                 <div className="space-y-2">
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="プレビュー"
+                    width={200}
+                    height={200}
                     className="max-h-[200px] mx-auto rounded-lg"
                   />
                   <Button
