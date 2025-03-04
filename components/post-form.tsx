@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -13,16 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 
 interface PostFormData {
+  image: string;
   caption: string;
-  imageFile: File | null;
-  scheduledDate: Date | undefined;
-  scheduledTime: string;
+  scheduledDate: string;
 }
 
 // カスタムイベントを定義（ScheduledPostsコンポーネントと同じ名前を使用）
@@ -30,10 +31,9 @@ const STORAGE_UPDATE_EVENT = "scheduledPostsUpdate";
 
 export function PostForm() {
   const [formData, setFormData] = useState<PostFormData>({
+    image: "",
     caption: "",
-    imageFile: null,
-    scheduledDate: undefined,
-    scheduledTime: "",
+    scheduledDate: "",
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +41,7 @@ export function PostForm() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData((prev) => ({ ...prev, imageFile: file }));
+      setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -52,11 +52,7 @@ export function PostForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.scheduledDate ||
-      !formData.scheduledTime ||
-      !formData.imageFile
-    ) {
+    if (!formData.scheduledDate || !formData.image) {
       alert("日時と画像は必須です");
       return;
     }
@@ -69,19 +65,13 @@ export function PostForm() {
       );
 
       // 日時を組み合わせてISOString形式に変換
-      const scheduledDateTime = new Date(
-        formData.scheduledDate.getFullYear(),
-        formData.scheduledDate.getMonth(),
-        formData.scheduledDate.getDate(),
-        parseInt(formData.scheduledTime.split(":")[0]),
-        parseInt(formData.scheduledTime.split(":")[1])
-      );
+      const scheduledDateTime = new Date(formData.scheduledDate);
 
       // 新しい投稿を作成
       const newPost = {
         id: Date.now(),
         caption: formData.caption,
-        imageUrl: imagePreview,
+        imageUrl: formData.image,
         scheduledAt: scheduledDateTime.toISOString(),
         status: "pending",
       };
@@ -92,10 +82,9 @@ export function PostForm() {
 
       // フォームをリセット
       setFormData({
+        image: "",
         caption: "",
-        imageFile: null,
-        scheduledDate: undefined,
-        scheduledTime: "",
+        scheduledDate: "",
       });
       setImagePreview(null);
 
@@ -145,12 +134,14 @@ export function PostForm() {
                 id="imageInput"
                 onChange={handleImageChange}
               />
-              {imagePreview ? (
+              {imagePreview && (
                 <div className="space-y-2">
-                  <img
+                  <Image
                     src={imagePreview}
-                    alt="プレビュー"
-                    className="max-h-[200px] mx-auto rounded-lg"
+                    alt="Preview"
+                    width={200}
+                    height={200}
+                    className="rounded-lg object-cover"
                   />
                   <Button
                     type="button"
@@ -158,26 +149,12 @@ export function PostForm() {
                     className="w-full"
                     onClick={() => {
                       setImagePreview(null);
-                      setFormData((prev) => ({ ...prev, imageFile: null }));
+                      setFormData((prev) => ({ ...prev, image: "" }));
                     }}
                   >
                     画像を削除
                   </Button>
                 </div>
-              ) : (
-                <label htmlFor="imageInput">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    asChild
-                  >
-                    <div>
-                      <ImageIcon className="mr-2 h-4 w-4" />
-                      画像を選択
-                    </div>
-                  </Button>
-                </label>
               )}
             </div>
           </div>
@@ -187,27 +164,21 @@ export function PostForm() {
             <div className="border rounded-md p-4">
               <DayPicker
                 mode="single"
-                selected={formData.scheduledDate}
+                selected={
+                  formData.scheduledDate
+                    ? new Date(formData.scheduledDate)
+                    : undefined
+                }
                 onSelect={(date) =>
-                  setFormData((prev) => ({ ...prev, scheduledDate: date }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    scheduledDate: date ? date.toISOString().split("T")[0] : "",
+                  }))
                 }
                 locale={ja}
                 disabled={disabledDays}
                 showOutsideDays={false}
                 className="mx-auto"
-              />
-            </div>
-            <div className="mt-2">
-              <Input
-                type="time"
-                className="w-full"
-                value={formData.scheduledTime}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    scheduledTime: e.target.value,
-                  }))
-                }
               />
             </div>
           </div>

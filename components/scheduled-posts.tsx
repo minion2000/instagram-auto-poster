@@ -35,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 interface ScheduledPost {
   id: number;
@@ -245,11 +246,15 @@ export function ScheduledPosts() {
                               <div className="form-group">
                                 <Label>現在の画像</Label>
                                 <div className="relative w-full h-[200px] bg-background rounded-lg overflow-hidden">
-                                  <img
-                                    src={editingPost?.imageUrl}
-                                    alt="投稿画像"
-                                    className="w-full h-full object-contain"
-                                  />
+                                  {post.imageUrl && (
+                                    <Image
+                                      src={post.imageUrl}
+                                      alt={post.caption}
+                                      width={300}
+                                      height={300}
+                                      className="rounded-lg object-cover"
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -287,19 +292,21 @@ export function ScheduledPosts() {
                                   </AlertDialogHeader>
                                   <div className="mt-4 border-t pt-4">
                                     <div className="flex items-start space-x-4">
-                                      <img
-                                        src={editingPost?.imageUrl}
-                                        alt="投稿画像"
-                                        className="w-20 h-20 object-cover rounded"
-                                      />
+                                      {post.imageUrl && (
+                                        <Image
+                                          src={post.imageUrl}
+                                          alt={post.caption}
+                                          width={300}
+                                          height={300}
+                                          className="w-20 h-20 object-cover rounded"
+                                        />
+                                      )}
                                       <div>
                                         <p className="text-sm font-medium text-foreground">
-                                          {formatDate(
-                                            editingPost?.scheduledAt || ""
-                                          )}
+                                          {formatDate(post.scheduledAt)}
                                         </p>
                                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                          {editingPost?.caption}
+                                          {post.caption}
                                         </p>
                                       </div>
                                     </div>
@@ -310,12 +317,7 @@ export function ScheduledPosts() {
                                     </AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      onClick={() => {
-                                        if (editingPost) {
-                                          handleDelete(editingPost.id);
-                                          setEditingPost(null);
-                                        }
-                                      }}
+                                      onClick={() => handleDelete(post.id)}
                                     >
                                       削除
                                     </AlertDialogAction>
@@ -343,11 +345,15 @@ export function ScheduledPosts() {
                             </AlertDialogHeader>
                             <div className="mt-4 border-t pt-4">
                               <div className="flex items-start space-x-4">
-                                <img
-                                  src={post.imageUrl}
-                                  alt="投稿画像"
-                                  className="w-20 h-20 object-cover rounded"
-                                />
+                                {post.imageUrl && (
+                                  <Image
+                                    src={post.imageUrl}
+                                    alt={post.caption}
+                                    width={300}
+                                    height={300}
+                                    className="w-20 h-20 object-cover rounded"
+                                  />
+                                )}
                                 <div>
                                   <p className="text-sm font-medium text-foreground">
                                     {formatDate(post.scheduledAt)}
@@ -376,11 +382,15 @@ export function ScheduledPosts() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <img
-                    src={post.imageUrl}
-                    alt="投稿画像"
-                    className="w-20 h-20 object-cover rounded"
-                  />
+                  {post.imageUrl && (
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.caption}
+                      width={300}
+                      height={300}
+                      className="rounded-lg object-cover"
+                    />
+                  )}
                   <p className="text-sm line-clamp-3">{post.caption}</p>
                 </div>
               </div>
