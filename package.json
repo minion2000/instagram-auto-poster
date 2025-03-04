@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "class-variance-authority": "^0.7.1",
@@ -17,7 +19,7 @@
     "lucide-react": "^0.477.0",
     "next": "15.2.0",
     "react": "^18.0.0",
-    "react-day-picker": "^8.9.0",
+    "react-day-picker": "^9.5.1",
     "react-dom": "^18.0.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
