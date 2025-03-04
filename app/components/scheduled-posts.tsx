@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import Image from "next/image";
 
 interface ScheduledPost {
   id: number;
@@ -91,11 +92,15 @@ export function ScheduledPosts() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <img
-                    src={post.imageUrl}
-                    alt="投稿画像"
-                    className="w-20 h-20 object-cover rounded"
-                  />
+                  {post.imageUrl && (
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.caption}
+                      width={300}
+                      height={300}
+                      className="rounded-lg object-cover"
+                    />
+                  )}
                   <p className="text-sm line-clamp-3">{post.caption}</p>
                 </div>
               </div>
