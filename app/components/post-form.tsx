@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -10,28 +9,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageIcon, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { ja } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 
 interface PostFormData {
+  image: string;
   caption: string;
-  imageFile: File | null;
-  scheduledDate: Date | undefined;
-  scheduledTime: string;
+  scheduledDate: string;
 }
 
 export function PostForm() {
   const [formData, setFormData] = useState<PostFormData>({
+    image: "",
     caption: "",
-    imageFile: null,
-    scheduledDate: undefined,
-    scheduledTime: "",
+    scheduledDate: "",
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +35,7 @@ export function PostForm() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData((prev) => ({ ...prev, imageFile: file }));
+      setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -50,11 +46,7 @@ export function PostForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.scheduledDate ||
-      !formData.scheduledTime ||
-      !formData.imageFile
-    ) {
+    if (!formData.scheduledDate || !formData.image) {
       alert("日時と画像は必須です");
       return;
     }
@@ -68,14 +60,8 @@ export function PostForm() {
       const newPost = {
         id: Date.now(),
         caption: formData.caption,
-        imageUrl: imagePreview,
-        scheduledAt: new Date(
-          formData.scheduledDate.getFullYear(),
-          formData.scheduledDate.getMonth(),
-          formData.scheduledDate.getDate(),
-          parseInt(formData.scheduledTime.split(":")[0]),
-          parseInt(formData.scheduledTime.split(":")[1])
-        ).toISOString(),
+        imageUrl: formData.image,
+        scheduledAt: new Date(formData.scheduledDate).toISOString(),
         status: "pending",
       };
       scheduledPosts.push(newPost);
@@ -83,10 +69,9 @@ export function PostForm() {
 
       // フォームをリセット
       setFormData({
+        image: "",
         caption: "",
-        imageFile: null,
-        scheduledDate: undefined,
-        scheduledTime: "",
+        scheduledDate: "",
       });
       setImagePreview(null);
     } catch (error) {
@@ -147,7 +132,7 @@ export function PostForm() {
                     className="w-full"
                     onClick={() => {
                       setImagePreview(null);
-                      setFormData((prev) => ({ ...prev, imageFile: null }));
+                      setFormData((prev) => ({ ...prev, image: "" }));
                     }}
                   >
                     画像を削除
@@ -176,30 +161,17 @@ export function PostForm() {
             <div className="border rounded-md p-4">
               <DayPicker
                 mode="single"
-                selected={formData.scheduledDate}
+                selected={new Date(formData.scheduledDate)}
                 onSelect={(date) =>
                   setFormData((prev) => ({
                     ...prev,
-                    scheduledDate: date || undefined,
+                    scheduledDate: date?.toISOString().split("T")[0] || "",
                   }))
                 }
                 locale={ja}
                 disabled={disabledDays}
                 showOutsideDays={false}
                 className="mx-auto"
-              />
-            </div>
-            <div className="mt-2">
-              <Input
-                type="time"
-                className="w-full"
-                value={formData.scheduledTime}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    scheduledTime: e.target.value,
-                  }))
-                }
               />
             </div>
           </div>
