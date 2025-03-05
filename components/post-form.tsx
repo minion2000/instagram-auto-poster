@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -15,10 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
+import { useUploadThing } from "@/lib/uploadthing";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface PostFormData {
   image: string;
@@ -28,6 +29,10 @@ interface PostFormData {
 }
 
 export function PostForm() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { startUpload } = useUploadThing("imageUploader");
+
   const [formData, setFormData] = useState<PostFormData>({
     image: "",
     caption: "",
@@ -36,15 +41,16 @@ export function PostForm() {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         const imageDataUrl = reader.result as string;
         setImagePreview(imageDataUrl);
-        setFormData((prev) => ({ ...prev, image: imageDataUrl }));
       };
       reader.readAsDataURL(file);
     }
@@ -52,16 +58,23 @@ export function PostForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.scheduledDate || !formData.scheduledTime || !formData.image) {
+    if (!formData.scheduledDate || !formData.scheduledTime || !selectedFile) {
       alert("日時と画像は必須です");
+      return;
+    }
+
+    if (!session?.user) {
+      alert("ログインが必要です");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const currentPosts = JSON.parse(
-        localStorage.getItem("scheduledPosts") || "[]"
-      );
+      // 画像をアップロード
+      const uploadResult = await startUpload([selectedFile]);
+      if (!uploadResult) {
+        throw new Error("画像のアップロードに失敗しました");
+      }
 
       // 日付と時間を組み合わせてDateオブジェクトを作成
       const [year, month, day] = formData.scheduledDate
@@ -76,17 +89,24 @@ export function PostForm() {
         parseInt(minutes)
       );
 
-      const newPost = {
-        id: Date.now(),
-        caption: formData.caption,
-        imageUrl: formData.image,
-        scheduledAt: scheduledDateTime.toISOString(),
-        status: "pending",
-      };
+      // 投稿を作成
+      const response = await fetch("/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          caption: formData.caption,
+          imageUrl: uploadResult[0].url,
+          scheduledAt: scheduledDateTime.toISOString(),
+        }),
+      });
 
-      const updatedPosts = [...currentPosts, newPost];
-      localStorage.setItem("scheduledPosts", JSON.stringify(updatedPosts));
+      if (!response.ok) {
+        throw new Error("投稿の作成に失敗しました");
+      }
 
+      // フォームをリセット
       setFormData({
         image: "",
         caption: "",
@@ -94,8 +114,10 @@ export function PostForm() {
         scheduledTime: "",
       });
       setImagePreview(null);
+      setSelectedFile(null);
 
       alert("投稿がスケジュールされました");
+      router.refresh();
     } catch (error) {
       console.error("投稿の保存に失敗しました:", error);
       alert("投稿の保存に失敗しました");
@@ -107,6 +129,19 @@ export function PostForm() {
   const disabledDays = {
     before: new Date(),
   };
+
+  if (!session) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>ログインが必要です</CardTitle>
+          <CardDescription>
+            投稿を作成するにはログインしてください
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -171,7 +206,7 @@ export function PostForm() {
                     className="w-full"
                     onClick={() => {
                       setImagePreview(null);
-                      setFormData((prev) => ({ ...prev, image: "" }));
+                      setSelectedFile(null);
                     }}
                   >
                     画像を削除
