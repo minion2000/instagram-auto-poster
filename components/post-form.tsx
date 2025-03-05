@@ -24,6 +24,7 @@ interface PostFormData {
   image: string;
   caption: string;
   scheduledDate: string;
+  scheduledTime: string;
 }
 
 export function PostForm() {
@@ -31,6 +32,7 @@ export function PostForm() {
     image: "",
     caption: "",
     scheduledDate: "",
+    scheduledTime: "",
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,10 +40,11 @@ export function PostForm() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const imageDataUrl = reader.result as string;
+        setImagePreview(imageDataUrl);
+        setFormData((prev) => ({ ...prev, image: imageDataUrl }));
       };
       reader.readAsDataURL(file);
     }
@@ -49,22 +52,30 @@ export function PostForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.scheduledDate || !formData.image) {
+    if (!formData.scheduledDate || !formData.scheduledTime || !formData.image) {
       alert("日時と画像は必須です");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // 現在の投稿一覧を取得
       const currentPosts = JSON.parse(
         localStorage.getItem("scheduledPosts") || "[]"
       );
 
-      // 日時を組み合わせてISOString形式に変換
-      const scheduledDateTime = new Date(formData.scheduledDate);
+      // 日付と時間を組み合わせてDateオブジェクトを作成
+      const [year, month, day] = formData.scheduledDate
+        .split("T")[0]
+        .split("-");
+      const [hours, minutes] = formData.scheduledTime.split(":");
+      const scheduledDateTime = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
 
-      // 新しい投稿を作成
       const newPost = {
         id: Date.now(),
         caption: formData.caption,
@@ -73,15 +84,14 @@ export function PostForm() {
         status: "pending",
       };
 
-      // 投稿一覧を更新
       const updatedPosts = [...currentPosts, newPost];
       localStorage.setItem("scheduledPosts", JSON.stringify(updatedPosts));
 
-      // フォームをリセット
       setFormData({
         image: "",
         caption: "",
         scheduledDate: "",
+        scheduledTime: "",
       });
       setImagePreview(null);
 
@@ -131,15 +141,30 @@ export function PostForm() {
                 id="imageInput"
                 onChange={handleImageChange}
               />
-              {imagePreview && (
+              {!imagePreview ? (
+                <label htmlFor="imageInput">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <div className="flex items-center justify-center">
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      画像を選択
+                    </div>
+                  </Button>
+                </label>
+              ) : (
                 <div className="space-y-2">
-                  <Image
-                    src={imagePreview}
-                    alt="Preview"
-                    width={200}
-                    height={200}
-                    className="rounded-lg object-cover"
-                  />
+                  <div className="relative w-full aspect-video">
+                    <Image
+                      src={imagePreview}
+                      alt="プレビュー"
+                      fill
+                      className="object-contain rounded-lg"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
@@ -169,7 +194,7 @@ export function PostForm() {
                 onSelect={(date) =>
                   setFormData((prev) => ({
                     ...prev,
-                    scheduledDate: date ? date.toISOString().split("T")[0] : "",
+                    scheduledDate: date ? date.toISOString() : "",
                   }))
                 }
                 locale={ja}
@@ -177,6 +202,21 @@ export function PostForm() {
                 showOutsideDays={false}
                 className="mx-auto"
               />
+              <div className="mt-4">
+                <Label htmlFor="scheduledTime">時間</Label>
+                <Input
+                  id="scheduledTime"
+                  type="time"
+                  value={formData.scheduledTime}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      scheduledTime: e.target.value,
+                    }))
+                  }
+                  className="mt-2"
+                />
+              </div>
             </div>
           </div>
 
